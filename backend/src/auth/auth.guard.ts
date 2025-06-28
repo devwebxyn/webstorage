@@ -1,62 +1,78 @@
 // backend/src/auth/auth.guard.ts
-import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { expressjwt as jwt } from 'express-jwt';
-import { expressJwtSecret, GetVerificationKey } from 'jwks-rsa';
-import { DatabaseService } from 'src/database/database.service'; // <-- Impor service yang benar
+import { createClerkClient } from '@clerk/clerk-sdk-node';
+import { Request } from 'express';
+
+declare global {
+  namespace Express {
+    interface Request {
+      user?: {
+        userId: string; // ✅ Ganti dari "sub" ke "userId" agar konsisten
+        email?: string;
+        name?: string;
+        [key: string]: any;
+      };
+    }
+  }
+}
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-  constructor(
-    // Inject DatabaseService, bukan PrismaService
-    private db: DatabaseService,
-    private configService: ConfigService,
-  ) {}
+  private clerkClientInstance: ReturnType<typeof createClerkClient>;
+
+  constructor(private readonly configService: ConfigService) {
+    const secretKey = this.configService.get<string>('CLERK_SECRET_KEY') as string;
+
+    if (!secretKey) {
+      throw new Error('CLERK_SECRET_KEY is not defined in environment variables');
+    }
+
+    this.clerkClientInstance = createClerkClient({ secretKey });
+  }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const req = context.switchToHttp().getRequest();
-    const res = context.switchToHttp().getResponse();
+    const request = context.switchToHttp().getRequest<Request>();
+    const token = this.extractTokenFromHeader(request);
 
-    const issuerUrl = this.configService.get<string>('CLERK_ISSUER_URL');
-    const audience = this.configService.get<string>('CLERK_AUDIENCE');
-
-    const validationMiddleware = jwt({
-      secret: expressJwtSecret({
-        cache: true,
-        rateLimit: true,
-        jwksRequestsPerMinute: 5,
-        jwksUri: `${issuerUrl}.well-known/jwks.json`,
-      }) as GetVerificationKey,
-      audience: audience,
-      issuer: issuerUrl,
-      algorithms: ['RS256'],
-    });
+    if (!token) {
+      throw new UnauthorizedException('Authentication token not found.');
+    }
 
     try {
-      await new Promise<void>((resolve, reject) => {
-        validationMiddleware(req, res, (err) => err ? reject(err) : resolve());
-      });
+      const sessionClaims = await this.clerkClientInstance.verifyToken(token);
 
-      const clerkId = req.auth.sub;
-      if (!clerkId) throw new UnauthorizedException('User ID tidak ada di token.');
+      const safeString = (val: unknown): string => (typeof val === 'string' ? val : '');
 
-      const pool = this.db.getPool();
-      let userResult = await pool.query('SELECT * FROM users WHERE clerk_id = $1', [clerkId]);
-      let user = userResult.rows[0];
+      const email =
+        typeof sessionClaims.email_addresses?.[0]?.email_address === 'string'
+          ? sessionClaims.email_addresses[0].email_address
+          : (sessionClaims.email as string | undefined);
 
-      if (!user) {
-        const insertResult = await pool.query(
-          'INSERT INTO users (clerk_id, email, name, created_at, updated_at) VALUES ($1, $2, $3, NOW(), NOW()) RETURNING *',
-          [clerkId, req.auth.email, req.auth.name]
-        );
-        user = insertResult.rows[0];
-      }
+      request.user = {
+        userId: safeString(sessionClaims.sub), // ✅ tambahkan userId eksplisit
+        email: email,
+        name:
+          `${safeString(sessionClaims.first_name)} ${safeString(sessionClaims.last_name)}`.trim() ||
+          safeString(sessionClaims.username),
+        ...sessionClaims,
+      };
 
-      req.user = user;
       return true;
-
     } catch (error) {
-      throw new UnauthorizedException('Token tidak valid atau kedaluwarsa.');
+      console.error('Token verification failed:', error);
+      throw new UnauthorizedException('Token tidak valid atau sudah kedaluwarsa.');
     }
+  }
+
+  private extractTokenFromHeader(request: Request): string | undefined {
+    const authHeader = request.headers.authorization || '';
+    const [type, token] = authHeader.split(' ');
+    return type === 'Bearer' ? token : undefined;
   }
 }

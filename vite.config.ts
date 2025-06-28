@@ -2,14 +2,14 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import svgr from 'vite-plugin-svgr'
-import path from 'path' // <-- 1. Impor 'path'
+import path from 'path' // <-- Penting: Impor 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react(), svgr()],
-  // 2. Tambahkan blok 'resolve' di bawah ini
   resolve: {
     alias: {
+      // Ini adalah alias yang Anda gunakan
       '@': path.resolve(__dirname, './src'),
     },
   },

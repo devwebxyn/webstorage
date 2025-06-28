@@ -4,10 +4,13 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-
-  // Menambahkan 'api' secara global ke semua endpoint
   app.setGlobalPrefix('api');
-
-  await app.listen(3000);
+  // Pastikan bagian CORS ini sudah ada dan benar seperti yang kita bahas sebelumnya
+  app.enableCors({
+    origin: 'http://localhost:5173', // Penting: Ini harus URL frontend Anda
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    credentials: true,
+  });
+  await app.listen(3000); // Pastikan ini 3000
 }
 bootstrap();
