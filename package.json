@@ -9,7 +9,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@clerk/clerk-react": "^5.32.2",
+    "@clerk/themes": "^2.2.52",
     "@supabase/supabase-js": "^2.50.2",
+    "axios": "^1.10.0",
     "framer-motion": "^12.19.2",
     "lucide-react": "^0.524.0",
     "prism-react-renderer": "^2.4.1",

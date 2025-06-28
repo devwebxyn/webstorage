@@ -1,5 +1,5 @@
 // src/pages/LandingPage.tsx
-import { Navbar } from '../components/layout/Navbar';
+import Navbar from '../components/layout/Navbar'; // Perbaikan di sini, tanpa {}
 import { Footer } from '../components/layout/Footer';
 import { Hero } from '../sections/Hero';
 import { Features } from '../sections/Features';

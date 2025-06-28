@@ -1,30 +1,23 @@
 // src/pages/DocumentationPage.tsx
 import { useState, useEffect } from 'react';
-import { Navbar } from '../components/layout/Navbar';
+import Navbar from '../components/layout/Navbar'; // <-- PERBAIKAN: Impor tanpa {}
 import { Footer } from '../components/layout/Footer';
-
-// Impor semua komponen konten baru kita
 import { GettingStarted } from '../components/docs/content/GettingStarted';
 import { UploadFile } from '../components/docs/content/UploadFile';
 import { CreateBucket } from '../components/docs/content/CreateBucket';
-// Anda bisa terus mengimpor komponen lain di sini saat Anda membuatnya
 
 export default function DocumentationPage() {
-  // State untuk melacak section mana yang aktif
   const [activeSection, setActiveSection] = useState('pendahuluan');
 
-  // Efek untuk mendeteksi perubahan hash di URL dan update state
   useEffect(() => {
     const handleHashChange = () => {
       setActiveSection(window.location.hash.substring(1) || 'pendahuluan');
     };
     window.addEventListener('hashchange', handleHashChange);
-    // Jalankan sekali saat pertama kali load
-    handleHashChange(); 
+    handleHashChange();
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
   
-  // Data untuk navigasi (tetap sama)
   const navLinks = [
     { category: 'Mulai', links: [ { title: 'Pendahuluan', id: 'pendahuluan' }, { title: 'API Keys', id: 'api-keys' }, { title: 'Instalasi SDK', id: 'instalasi-sdk' }] },
     { category: 'Autentikasi', links: [ { title: 'Bearer Token', id: 'bearer-token' }, { title: 'Kode Error', id: 'auth-errors' }] },
@@ -33,9 +26,7 @@ export default function DocumentationPage() {
     { category: 'Lanjutan', links: [ { title: 'Webhooks', id: 'webhooks' }, { title: 'Rate Limiting', id: 'rate-limiting' }, { title: 'Versioning', id: 'versioning' }] },
   ];
 
-  // Fungsi untuk menampilkan komponen konten yang sesuai
   const renderActiveSection = () => {
-    // Untuk sekarang, kita hanya punya 3 contoh. Sisanya bisa menampilkan placeholder.
     switch (activeSection) {
       case 'pendahuluan':
       case 'api-keys':
@@ -62,7 +53,6 @@ export default function DocumentationPage() {
         <div className="lg:grid lg:grid-cols-[280px_1fr_280px] lg:gap-8">
           
           <aside className="hidden lg:block sticky top-24 self-start max-h-[calc(100vh-6rem)] overflow-y-auto">
-            {/* Sidebar Kiri */}
             <nav>
               {navLinks.map((group) => (
                 <div key={group.category} className="mb-6">
@@ -86,7 +76,6 @@ export default function DocumentationPage() {
           </main>
           
           <aside className="hidden lg:block sticky top-24 self-start">
-             {/* Sidebar Kanan bisa dibuat lebih dinamis nanti */}
              <nav>
                 <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">On this page</h3>
              </nav>
