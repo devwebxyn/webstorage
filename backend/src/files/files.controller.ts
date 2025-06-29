@@ -6,14 +6,24 @@ import {
   Body,
   UseGuards,
   Req,
+  Patch,
+  Param,
   UnauthorizedException,
   InternalServerErrorException,
   Logger,
+  Query,
 } from '@nestjs/common';
 import { FilesService } from './files.service';
 import { AuthGuard } from '../auth/auth.guard';
-import { Request } from 'express';
 import { CreateFileDto } from './dto/create-file.dto';
+import { UpdateFileDto } from './dto/update-file.dto';
+
+// Definisikan tipe Request yang sudah diautentikasi
+interface AuthenticatedRequest extends Request {
+  auth: {
+    userId: string;
+  };
+}
 
 @Controller('files')
 @UseGuards(AuthGuard)
@@ -23,54 +33,48 @@ export class FilesController {
   constructor(private readonly filesService: FilesService) {}
 
   @Get()
-  async findAll(@Req() req: Request) {
-    try {
-      const userId = req.user?.userId; // ✅ gunakan userId, bukan clerk_id
-      this.logger.log(`findAll: Request received for user: ${userId}`);
-      if (!userId) {
-        this.logger.error('findAll: User ID tidak ditemukan di req.user setelah AuthGuard.');
-        throw new UnauthorizedException('User ID tidak ditemukan.');
-      }
-      const files = await this.filesService.findAllForUser(userId);
-      this.logger.log(`findAll: Berhasil mengambil ${files.length} file untuk user ${userId}.`);
-      return files;
-    } catch (error) {
-      this.logger.error(`findAll: Gagal mengambil file: ${error.message}`, error.stack);
-      if (error instanceof UnauthorizedException) {
-        throw error;
-      }
-      throw new InternalServerErrorException('Gagal mengambil file.');
+  async findAll(
+    @Req() req: AuthenticatedRequest,
+    @Query('isPublic') isPublic?: string,
+  ) {
+    const userId = req.auth.userId;
+    if (!userId) {
+      throw new UnauthorizedException('User ID tidak ditemukan.');
     }
+    const filters = {
+      isPublic: isPublic ? isPublic === 'true' : undefined,
+    };
+    return this.filesService.findAll(userId, filters);
   }
 
+  // Endpoint untuk file publik, tidak perlu AuthGuard
   @Get('public')
+  @UseGuards() // Kosongkan guard untuk bypass autentikasi
   async findPublicFiles() {
-    try {
-      this.logger.log('findPublicFiles: Request received for public files.');
-      const publicFiles = await this.filesService.findPublicFiles();
-      this.logger.log(`findPublicFiles: Berhasil mengambil ${publicFiles.length} file publik.`);
-      return publicFiles;
-    } catch (error) {
-      this.logger.error(`findPublicFiles: Gagal mengambil file publik: ${error.message}`, error.stack);
-      throw new InternalServerErrorException('Gagal mengambil file publik.');
-    }
+    return this.filesService.findPublicFiles();
   }
 
   @Post()
-  async create(@Body() createFileDto: CreateFileDto, @Req() req: Request) {
-    try {
-      const userId = req.user?.userId; // ✅ gunakan userId, bukan clerk_id
-      this.logger.log(`create: Request received to create file for user: ${userId}`);
-      if (!userId) {
-        this.logger.error('create: User ID tidak ditemukan di req.user setelah AuthGuard.');
-        throw new UnauthorizedException('User ID tidak ditemukan.');
-      }
-      const newFile = await this.filesService.create(createFileDto, userId);
-      this.logger.log(`create: File ${newFile.fileName} (Public: ${newFile.isPublic}) berhasil dibuat.`);
-      return newFile;
-    } catch (error) {
-      this.logger.error(`create: Gagal membuat file: ${error.message}`, error.stack);
-      throw new InternalServerErrorException('Gagal membuat file.');
+  async create(@Body() createFileDto: CreateFileDto, @Req() req: AuthenticatedRequest) {
+    const userId = req.auth.userId;
+    if (!userId) {
+      throw new UnauthorizedException('User ID tidak ditemukan.');
     }
+    return this.filesService.create(createFileDto, userId);
+  }
+  
+  // Endpoint untuk mengubah status file (misal: menjadikannya public)
+  @Patch(':id')
+  update(
+    @Param('id') id: string,
+    @Body() updateFileDto: UpdateFileDto,
+    @Req() req: AuthenticatedRequest
+  ) {
+    // Di sini Anda bisa menambahkan logika untuk memastikan hanya pemilik file yang bisa mengedit
+    // Untuk saat ini, kita biarkan simpel
+    // return this.filesService.update(+id, updateFileDto);
+    this.logger.log(`Request to update file ${id} with data:`, updateFileDto);
+    // Logika update belum diimplementasikan di service, jadi kita return pesan
+    return { message: `File with id ${id} would be updated.` };
   }
 }

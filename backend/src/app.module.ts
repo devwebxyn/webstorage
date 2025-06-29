@@ -6,6 +6,8 @@ import { AppService } from './app.service';
 import { DatabaseModule } from './database/database.module'; // <-- Impor modul database kita yang baru
 import { AuthModule } from './auth/auth.module';
 import { FilesModule } from './files/files.module';
+import { MegaModule } from './mega/mega.module'; // Impor MegaModule
+import { UploadModule } from './upload/upload.module';
 
 @Module({
   imports: [
@@ -18,6 +20,8 @@ import { FilesModule } from './files/files.module';
     DatabaseModule, // <-- Gunakan DatabaseModule, bukan PrismaModule
     AuthModule,
     FilesModule,
+    MegaModule, // Daftarkan MegaModule di sini
+    UploadModule, 
   ],
   controllers: [AppController],
   providers: [AppService],

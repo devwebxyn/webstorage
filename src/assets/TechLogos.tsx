@@ -46,3 +46,28 @@ export const DockerLogo: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
       </g>
     </svg>
 );
+
+
+// IKON BARU UNTUK MEGA
+export const MegaLogo: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    {...props}
+  >
+    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h-3v10h3v-10zm4 0h-3v10h3v-10z" />
+  </svg>
+);
+
+// IKON BARU UNTUK INTERNXT
+export const InternxtLogo: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    {...props}
+  >
+     <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4Z" />
+  </svg>
+);

@@ -7,11 +7,14 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Pool } from 'pg';
+import { drizzle, NodePgDatabase } from 'drizzle-orm/node-postgres';
+import * as schema from '../files/entities/file.entity'; // Impor semua skema Anda jika ada lebih banyak
 
 @Injectable()
 export class DatabaseService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(DatabaseService.name);
   private pool: Pool;
+  private db: NodePgDatabase<typeof schema>; // Definisikan instance Drizzle
 
   constructor(private configService: ConfigService) {
     const databaseUrl = this.configService.get<string>('DATABASE_URL');
@@ -20,17 +23,19 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
       throw new Error('DATABASE_URL is not defined');
     }
 
-    // ✅ Pool dengan SSL self-signed
     this.pool = new Pool({
       connectionString: databaseUrl,
       ssl: {
-        rejectUnauthorized: false, // HANYA untuk dev/test, jangan dipakai di production
+        rejectUnauthorized: false,
       },
     });
 
     this.pool.on('error', (err: Error) => {
       this.logger.error(`Unexpected error on idle client: ${err.message}`, err.stack);
     });
+    
+    // Inisialisasi Drizzle ORM dengan pool
+    this.db = drizzle(this.pool, { schema });
   }
 
   async onModuleInit() {
@@ -39,7 +44,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
       this.logger.log('✅ Database connected successfully');
       client.release();
     } catch (error) {
-      this.logger.error('❌ Failed to connect to database: ' + error.message, error.stack);
+      this.logger.error('❌ Failed to connect to database: ' + (error as Error).message, (error as Error).stack);
       throw error;
     }
   }
@@ -50,7 +55,16 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     this.logger.log('✅ Database connection pool closed');
   }
 
-  // Untuk akses manual jika diperlukan
+  /**
+   * Mengembalikan instance Drizzle ORM yang siap digunakan.
+   * Gunakan method ini untuk semua query database.
+   */
+  getDb(): NodePgDatabase<typeof schema> {
+    return this.db;
+  }
+  
+  // Method getPool() bisa tetap ada jika dibutuhkan di tempat lain,
+  // tapi untuk query Drizzle, gunakan getDb().
   getPool(): Pool {
     return this.pool;
   }

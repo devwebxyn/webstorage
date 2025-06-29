@@ -1,63 +1,111 @@
 // src/pages/PrivateFilesPage.tsx
-import { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '../components/dashboard/DashboardLayout';
-import { FileTable } from '../components/dashboard/FileTable'; // Kita gunakan kembali komponen tabel file
+import { FileTable } from '../components/dashboard/FileTable';
 import apiClient from '@/services/apiClient';
-import { FileText } from 'lucide-react';
 
-// Definisikan tipe data untuk file yang akan diterima dari API
-interface ApiFile {
+// Tipe data dari API (tetap fleksibel dengan `any`)
+type ApiFile = {
   id: number;
-  file_name: string;
+  fileName: string;
   size: number;
-  created_at: string;
-  // Tambahkan properti lain jika ada, contoh:
-  // sharedWith: number;
-}
+  createdAt: string;
+  isPublic: boolean;
+};
+
+// Tipe data yang dibutuhkan oleh komponen FileTable
+type TableFile = {
+  name: string;
+  size: string;
+  sharedWith: string; // <-- PERBAIKAN: Ubah dari number ke string
+  lastModified: string;
+};
+
+// Data untuk Tab
+const TABS = [
+  { id: 'all', label: 'Semua' },
+  { id: 'supabase', label: 'Supabase' },
+  { id: 'mega', label: 'MEGA' },
+  { id: 'internxt', label: 'Internxt' },
+];
 
 export default function PrivateFilesPage() {
-  const [privateFiles, setPrivateFiles] = useState<ApiFile[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [files, setFiles] = useState<TableFile[]>([]); // Gunakan tipe TableFile
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('all');
 
   useEffect(() => {
     const fetchFiles = async () => {
-      setIsLoading(true);
+      setLoading(true);
       try {
-        // Panggil endpoint backend untuk mendapatkan file privat
-        const response = await apiClient.get<ApiFile[]>('/files');
-        setPrivateFiles(response.data);
+        let url = '/files'; // Endpoint dasar untuk mengambil file privat
+        
+        // Logika filter berdasarkan tab tetap dipertahankan
+        const params: Record<string, string | boolean> = { isPublic: 'false' };
+        if (activeTab !== 'all') {
+          params.provider = activeTab;
+        }
+
+        const response = await apiClient.get<ApiFile[]>(url, { params });
+
+        // Konversi dari API ke struktur yang diinginkan oleh FileTable
+        const formatted = response.data.map((file: ApiFile) => ({
+          name: file.fileName,
+          size: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
+          sharedWith: file.isPublic ? 'Public' : 'Only you', // <-- Ini adalah string
+          lastModified: new Date(file.createdAt).toLocaleDateString('id-ID', {
+            day: '2-digit',
+            month: 'long',
+            year: 'numeric',
+          }),
+        }));
+
+        setFiles(formatted);
       } catch (error) {
-        console.error("Gagal mengambil file privat:", error);
-        // Anda bisa menambahkan notifikasi error di sini
+        console.error('Gagal mengambil file:', error);
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     };
 
     fetchFiles();
-  }, []);
+  }, [activeTab]);
 
   return (
+    // Membungkus semua konten dengan DashboardLayout untuk konsistensi
     <DashboardLayout>
-      <div className="space-y-8">
-        <div className="flex items-center gap-4">
-          <FileText className="h-8 w-8 text-blue-600" />
+      <div className="space-y-6">
+        <div className="mb-6">
           <h1 className="text-3xl font-bold text-slate-800">Private Files</h1>
+          <p className="text-slate-500 mt-1">Kelola semua file pribadi Anda di sini.</p>
         </div>
-        
-        {isLoading ? (
-          <p className="text-center text-slate-500">Memuat data...</p>
+
+        {/* Komponen Tabs */}
+        <div className="border-b border-slate-200">
+          <nav className="-mb-px flex space-x-6 overflow-x-auto">
+            {TABS.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors
+                  ${
+                    activeTab === tab.id
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+                  }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </nav>
+        </div>
+
+        {loading ? (
+          <p className="text-center text-slate-500 py-10">Memuat file...</p>
         ) : (
           <FileTable 
-            title="All Your Private Files"
-            files={privateFiles.map(file => ({
-              name: file.file_name,
-              size: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
-              sharedWith: 1, // Placeholder, ganti dengan data asli jika ada
-              lastModified: new Date(file.created_at).toLocaleDateString('id-ID', {
-                  day: '2-digit', month: 'short', year: 'numeric'
-              }),
-            }))}
+            title="File Pribadi" 
+            files={files} 
           />
         )}
       </div>

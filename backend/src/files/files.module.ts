@@ -1,14 +1,12 @@
-// backend/src/files/files.module.ts
 import { Module } from '@nestjs/common';
 import { FilesService } from './files.service';
 import { FilesController } from './files.controller';
-import { AuthModule } from 'src/auth/auth.module';
-import { DatabaseModule } from 'src/database/database.module'; // <-- Gunakan DatabaseModule
+import { DatabaseModule } from '../database/database.module';
 
 @Module({
-  // Daftarkan modul yang benar untuk menyediakan dependensi
-  imports: [AuthModule, DatabaseModule],
+  imports: [DatabaseModule],
   controllers: [FilesController],
   providers: [FilesService],
+  exports: [FilesService], // Ekspor service agar bisa dipakai modul lain
 })
 export class FilesModule {}

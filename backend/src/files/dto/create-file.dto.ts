@@ -1,8 +1,24 @@
 // backend/src/files/dto/create-file.dto.ts
-// backend/src/files/dto/create-file.dto.ts
+import { IsString, IsNotEmpty, IsNumber, IsBoolean, IsOptional } from 'class-validator';
+
 export class CreateFileDto {
+  @IsString()
+  @IsNotEmpty()
   fileName: string;
-  path: string;
+
+  @IsString()
+  @IsNotEmpty()
+  path: string; // Validasi `path` tidak boleh kosong
+
+  @IsNumber()
+  @IsNotEmpty()
   size: number;
-  isPublic: boolean; // <-- Tambahkan properti ini
+
+  @IsBoolean()
+  @IsOptional()
+  isPublic?: boolean;
+
+  @IsString()
+  @IsNotEmpty()
+  storageProvider: string;
 }

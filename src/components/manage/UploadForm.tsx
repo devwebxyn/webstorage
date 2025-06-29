@@ -1,69 +1,90 @@
 // src/components/manage/UploadForm.tsx
 import React, { useState, useCallback } from 'react';
-// Ini adalah sintaks impor yang BENAR untuk versi modern react-dropzone.
-// Jika ini masih error, masalahnya 100% ada di node_modules Anda.
 import { useDropzone } from 'react-dropzone';
 import { UploadCloud } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { UploadProgressBar } from './UploadProgressBar';
+import { PostUploadModal } from './PostUploadModal';
 import apiClient from '@/services/apiClient';
-import { supabase } from '@/services/supabase';
 import { useUser } from '@clerk/clerk-react';
+
+type FileMetadata = {
+  id: string;
+  fileName: string;
+};
 
 export const UploadForm = () => {
   const { user } = useUser();
   const [uploadingFile, setUploadingFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
 
-  const handleUpload = async (file: File) => {
-    if (!user) {
-      alert('Anda harus login untuk mengunggah file.');
-      return;
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [uploadedFileMetadata, setUploadedFileMetadata] = useState<FileMetadata | null>(null);
+
+  const onUploadSuccess = (metadata: FileMetadata) => {
+    toast.success(`File "${metadata.fileName}" berhasil diunggah!`);
+    setUploadedFileMetadata(metadata);
+    setIsModalOpen(true);
+    setUploadingFile(null);
+  };
+
+  const onUploadError = (message: string) => {
+    toast.error(message);
+    setUploadingFile(null);
+  };
+
+  const handleMakeShared = async () => {
+    if (!uploadedFileMetadata) return;
+    const toastId = toast.loading('Mengubah status file...');
+    try {
+      await apiClient.patch(`/files/${uploadedFileMetadata.id}`, { isPublic: true });
+      toast.success('File sekarang bersifat publik (shared).', { id: toastId });
+    } catch (error) {
+      toast.error('Gagal mengubah status file.', { id: toastId });
+    } finally {
+      setIsModalOpen(false);
+      setUploadedFileMetadata(null);
     }
-    
-    setUploadingFile(file);
-    setUploadProgress(0);
+  };
+
+  const handleMoveToFolder = () => {
+    toast.success('Fitur folder akan segera hadir!', { icon: '📁' });
+    setIsModalOpen(false);
+    setUploadedFileMetadata(null);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setUploadedFileMetadata(null);
+  }
+
+  const uploadToMega = async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
 
     try {
-      const bucketName = 'cloudnest-files';
-      const filePath = `${user.id}/private/${Date.now()}-${file.name}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from(bucketName)
-        .upload(filePath, file, { cacheControl: '3600', upsert: false });
-
-      if (uploadError) throw uploadError;
-
-      // Simulasi progress bar
-      let progress = 0;
-      const interval = setInterval(() => {
-        progress += 20;
-        if (progress > 100) progress = 100;
-        
-        setUploadProgress(progress);
-        
-        if (progress >= 100) {
-          clearInterval(interval);
-          apiClient.post('/files', {
-            fileName: file.name,
-            path: filePath,
-            size: file.size,
-            isPublic: false,
-          }).then(() => {
-             alert(`File "${file.name}" berhasil diunggah!`);
-             setTimeout(() => setUploadingFile(null), 1000);
-          }).catch(apiError => {
-            console.error("Gagal menyimpan metadata:", apiError);
-            alert("Upload ke storage berhasil, tapi gagal menyimpan data ke database.");
-            setUploadingFile(null);
-          });
-        }
-      }, 200);
-
+      const response = await apiClient.post('/upload/mega', formData, {
+        onUploadProgress: (progressEvent) => {
+          const total = progressEvent.total ?? file.size;
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / total);
+          setUploadProgress(percentCompleted);
+        },
+      });
+      onUploadSuccess({ id: response.data.file.id, fileName: response.data.file.name });
     } catch (error: any) {
-      console.error('Upload failed:', error);
-      alert(`Upload Gagal: ${error.message}`);
-      setUploadingFile(null);
+      const errorMessage = error.response?.data?.message || 'Upload ke MEGA gagal.';
+      onUploadError(errorMessage);
     }
+  };
+
+  const handleUpload = async (file: File) => {
+    if (!user) {
+      toast.error('Anda harus login untuk mengunggah file.');
+      return;
+    }
+    setUploadingFile(file);
+    setUploadProgress(0);
+    await uploadToMega(file);
   };
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -75,28 +96,38 @@ export const UploadForm = () => {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, multiple: false });
 
   return (
-    <div className="bg-white p-6 rounded-xl border border-gray-200 h-full flex flex-col">
-      <h3 className="font-bold text-xl text-slate-800 mb-4">Upload Files</h3>
-      <div
-        {...getRootProps()}
-        className={`flex-1 flex flex-col items-center justify-center border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
-          isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 bg-slate-50 hover:bg-slate-100'
-        }`}
-      >
-        <input {...getInputProps()} />
-        <div className="text-center">
-          <UploadCloud className="mx-auto h-12 w-12 text-gray-400" />
-          <p className="mt-2 text-slate-600">
-            <span className="font-semibold text-blue-600">Click to upload</span> or drag and drop
-          </p>
-          <p className="text-xs text-gray-500">Video, Document, Image, etc.</p>
+    <>
+      <PostUploadModal
+        isOpen={isModalOpen}
+        fileName={uploadedFileMetadata?.fileName || ''}
+        onClose={handleCloseModal}
+        onMakeShared={handleMakeShared}
+        onMoveToFolder={handleMoveToFolder}
+      />
+      <div className="bg-white p-6 rounded-xl border border-gray-200 h-full flex flex-col">
+        <h3 className="font-bold text-xl text-slate-800 mb-6">Upload Files to MEGA</h3>
+        
+        <div
+          {...getRootProps()}
+          className={`flex-1 flex flex-col items-center justify-center border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+            isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 bg-slate-50 hover:bg-slate-100'
+          }`}
+        >
+          <input {...getInputProps()} />
+          <div className="text-center">
+            <UploadCloud className="mx-auto h-12 w-12 text-gray-400" />
+            <p className="mt-2 text-slate-600">
+              <span className="font-semibold text-blue-600">Click to upload</span> or drag and drop
+            </p>
+            <p className="text-xs text-gray-500">Video, Document, Image, etc.</p>
+          </div>
         </div>
+        {uploadingFile && (
+          <div className="mt-4">
+            <UploadProgressBar fileName={uploadingFile.name} progress={uploadProgress} />
+          </div>
+        )}
       </div>
-      {uploadingFile && (
-        <div className="mt-4">
-          <UploadProgressBar fileName={uploadingFile.name} progress={uploadProgress} />
-        </div>
-      )}
-    </div>
+    </>
   );
 };
