@@ -4,10 +4,12 @@ import { SignedIn, SignIn, SignUp } from '@clerk/clerk-react';
 import ScrollToTop from './components/utils/ScrollToTop';
 
 import LandingPage from './pages/LandingPage';
-import DocumentationPage from './pages/DocumentationPage';
 import DashboardPage from './pages/DashboardPage';
-import UploadPage from './pages/UploadPage'; // Halaman upload
-import FilesOverviewPage from './pages/FilesOverviewPage'; // <-- Halaman baru
+import ManageFilesPage from './pages/ManageFilesPage';
+// Impor halaman baru
+import PrivateFilesPage from './pages/PrivateFilesPage';
+import SharedFilesPage from './pages/SharedFilesPage';
+
 
 export default function App() {
   return (
@@ -16,52 +18,17 @@ export default function App() {
       <Routes>
         {/* Rute Publik */}
         <Route path="/" element={<LandingPage />} />
-        <Route path="/documentation" element={<DocumentationPage />} />
-        
-        {/* Rute untuk Autentikasi Clerk */}
-        <Route 
-          path="/login/*"
-          element={
-            <div className="flex justify-center items-center min-h-screen bg-gray-900 p-4 py-8">
-              <SignIn routing="path" path="/login" signUpUrl="/register" />
-            </div>
-          } 
-        />
-        <Route 
-          path="/register/*"
-          element={
-            <div className="flex justify-center items-center min-h-screen bg-gray-900 p-4 py-8">
-              <SignUp routing="path" path="/register" signInUrl="/login" />
-            </div>
-          }
-        />
+        <Route path="/login/*" element={<div className="flex justify-center items-center min-h-screen bg-slate-100"><SignIn routing="path" path="/login" /></div>} />
+        <Route path="/register/*" element={<div className="flex justify-center items-center min-h-screen bg-slate-100"><SignUp routing="path" path="/register" /></div>} />
         
         {/* Rute Privat yang Dilindungi */}
-        <Route
-          path="/dashboard"
-          element={
-            <SignedIn>
-              <DashboardPage />
-            </SignedIn>
-          }
-        />
-        <Route
-          path="/upload"
-          element={
-            <SignedIn>
-              <UploadPage />
-            </SignedIn>
-          }
-        />
-        {/* Rute baru untuk daftar file */}
-        <Route
-          path="/files" // Anda bisa memilih path lain, misal /dashboard/files
-          element={
-            <SignedIn>
-              <FilesOverviewPage />
-            </SignedIn>
-          }
-        />
+        <Route path="/dashboard" element={<SignedIn><DashboardPage /></SignedIn>} />
+        <Route path="/dashboard/manage-files" element={<SignedIn><ManageFilesPage /></SignedIn>} />
+        
+        {/* RUTE BARU UNTUK PRIVATE DAN SHARED */}
+        <Route path="/dashboard/private-files" element={<SignedIn><PrivateFilesPage /></SignedIn>} />
+        <Route path="/dashboard/shared-files" element={<SignedIn><SharedFilesPage /></SignedIn>} />
+
       </Routes>
     </BrowserRouter>
   );
