@@ -8,13 +8,13 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { Pool } from 'pg';
 import { drizzle, NodePgDatabase } from 'drizzle-orm/node-postgres';
-import * as schema from '../files/entities/file.entity'; // Impor semua skema Anda jika ada lebih banyak
+import schema from './schema'; // <-- PERBAIKAN: Impor dari file skema gabungan
 
 @Injectable()
 export class DatabaseService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(DatabaseService.name);
   private pool: Pool;
-  private db: NodePgDatabase<typeof schema>; // Definisikan instance Drizzle
+  private db: NodePgDatabase<typeof schema>;
 
   constructor(private configService: ConfigService) {
     const databaseUrl = this.configService.get<string>('DATABASE_URL');
@@ -22,19 +22,15 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
       this.logger.error('DATABASE_URL is not defined in .env');
       throw new Error('DATABASE_URL is not defined');
     }
-
     this.pool = new Pool({
       connectionString: databaseUrl,
-      ssl: {
-        rejectUnauthorized: false,
-      },
+      ssl: { rejectUnauthorized: false },
     });
-
     this.pool.on('error', (err: Error) => {
       this.logger.error(`Unexpected error on idle client: ${err.message}`, err.stack);
     });
     
-    // Inisialisasi Drizzle ORM dengan pool
+    // PERBAIKAN: Inisialisasi Drizzle dengan skema gabungan
     this.db = drizzle(this.pool, { schema });
   }
 
@@ -55,17 +51,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     this.logger.log('✅ Database connection pool closed');
   }
 
-  /**
-   * Mengembalikan instance Drizzle ORM yang siap digunakan.
-   * Gunakan method ini untuk semua query database.
-   */
   getDb(): NodePgDatabase<typeof schema> {
     return this.db;
-  }
-  
-  // Method getPool() bisa tetap ada jika dibutuhkan di tempat lain,
-  // tapi untuk query Drizzle, gunakan getDb().
-  getPool(): Pool {
-    return this.pool;
   }
 }

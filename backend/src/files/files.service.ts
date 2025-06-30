@@ -12,6 +12,8 @@ export class FilesService {
 
   constructor(private readonly databaseService: DatabaseService) {}
 
+  // backend/src/files/files.service.ts
+// ...
   async create(createFileDto: CreateFileDto, userId: string): Promise<FileEntity> {
     const db = this.databaseService.getDb();
     
@@ -36,6 +38,7 @@ export class FilesService {
       throw new InternalServerErrorException('Gagal menyimpan data file ke database.');
     }
   }
+// ...
 
   async findAll(userId: string, filters: { isPublic?: boolean }): Promise<FileEntity[]> {
     const db = this.databaseService.getDb();

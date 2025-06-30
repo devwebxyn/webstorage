@@ -13,10 +13,9 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UploadService } from './upload.service';
 import { AuthGuard } from '../auth/auth.guard';
-import { Express, Request } from 'express'; // Impor Request dari express
+import { Express, Request } from 'express';
 
 // Definisikan tipe Request yang sudah diautentikasi
-// Sesuaikan dengan struktur yang dibuat oleh AuthGuard Anda
 interface AuthenticatedRequest extends Request {
   user: {
     userId: string;

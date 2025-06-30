@@ -54,8 +54,11 @@ export class AuthGuard implements CanActivate {
           ? sessionClaims.email_addresses[0].email_address
           : (sessionClaims.email as string | undefined);
 
+     // backend/src/auth/auth.guard.ts
+// ... (bagian atas sama)
+      // ...
       request.user = {
-        userId: safeString(sessionClaims.sub), // ✅ tambahkan userId eksplisit
+        userId: safeString(sessionClaims.sub), // ✅ Pastikan 'sub' dari token di-map ke 'userId'
         email: email,
         name:
           `${safeString(sessionClaims.first_name)} ${safeString(sessionClaims.last_name)}`.trim() ||

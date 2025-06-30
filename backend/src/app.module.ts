@@ -3,25 +3,23 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { DatabaseModule } from './database/database.module'; // <-- Impor modul database kita yang baru
+import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './auth/auth.module';
-import { FilesModule } from './files/files.module';
-import { MegaModule } from './mega/mega.module'; // Impor MegaModule
+import { UsersModule } from './users/users.module'; // <-- IMPORT MODUL BARU
 import { UploadModule } from './upload/upload.module';
+import { FilesModule } from './files/files.module';
 
 @Module({
   imports: [
-    // Daftarkan ConfigModule agar .env bisa dibaca
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: '.env',
     }),
-    
-    // Daftarkan semua modul fungsional kita
-    DatabaseModule, // <-- Gunakan DatabaseModule, bukan PrismaModule
+    DatabaseModule,
     AuthModule,
+    UsersModule, // <-- TAMBAHKAN DI SINI
+    UploadModule,
     FilesModule,
-    MegaModule, // Daftarkan MegaModule di sini
-    UploadModule, 
   ],
   controllers: [AppController],
   providers: [AppService],
