@@ -37,9 +37,12 @@ export class FilesController {
     @Req() req: AuthenticatedRequest,
     @Query('isPublic') isPublic?: string,
   ) {
+    if (!req.auth) {
+      throw new UnauthorizedException('Authentication data not found.');
+    }
     const userId = req.auth.userId;
     if (!userId) {
-      throw new UnauthorizedException('User ID tidak ditemukan.');
+      throw new UnauthorizedException('User ID not found.');
     }
     const filters = {
       isPublic: isPublic ? isPublic === 'true' : undefined,
@@ -56,9 +59,12 @@ export class FilesController {
 
   @Post()
   async create(@Body() createFileDto: CreateFileDto, @Req() req: AuthenticatedRequest) {
+    if (!req.auth) {
+      throw new UnauthorizedException('Authentication data not found.');
+    }
     const userId = req.auth.userId;
     if (!userId) {
-      throw new UnauthorizedException('User ID tidak ditemukan.');
+      throw new UnauthorizedException('User ID not found.');
     }
     return this.filesService.create(createFileDto, userId);
   }

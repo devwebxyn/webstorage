@@ -8,7 +8,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { Pool } from 'pg';
 import { drizzle, NodePgDatabase } from 'drizzle-orm/node-postgres';
-import schema from './schema'; // <-- PERBAIKAN: Impor dari file skema gabungan
+import * as schema from './schema'; // <-- PERBAIKAN: Impor dari file skema gabungan
 
 @Injectable()
 export class DatabaseService implements OnModuleInit, OnModuleDestroy {

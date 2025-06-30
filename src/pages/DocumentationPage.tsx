@@ -138,7 +138,7 @@ export default function DocumentationPage() {
   return (
     <div className="bg-gray-950 text-white min-h-screen flex flex-col">
       {/* Navbar utama */}
-      <Navbar onToggleDocMenu={toggleSidebar} /> {/* Teruskan fungsi toggleSidebar */}
+      <Navbar /> {/* Teruskan fungsi toggleSidebar */}
 
       <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 flex-grow">
         {/* Konten utama dengan grid untuk desktop */}

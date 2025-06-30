@@ -31,8 +31,8 @@ const cloudDrivesData = [
 
 // DATA UNTUK FILE TABLE YANG SEBELUMNYA HILANG
 const dashboardFilesData = [
-  { name: 'Figma Design System Tutorial.docx', size: '24 MB', sharedWith: 8, lastModified: '24 Des 2023' },
-  { name: 'Basic UI Design.pdf', size: '18 MB', sharedWith: 10, lastModified: '16 Nov 2023' },
+  { name: 'Figma Design System Tutorial.docx', size: '24 MB', sharedWith: '8', lastModified: '24 Des 2023' },
+  { name: 'Basic UI Design.pdf', size: '18 MB', sharedWith: '10', lastModified: '16 Nov 2023' },
 ];
 
 export default function DashboardPage() {

@@ -49,7 +49,7 @@ export default function SharedFilesPage() {
             files={sharedFiles.map(file => ({
               name: file.file_name,
               size: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
-              sharedWith: 0, // Placeholder
+              sharedWith: '0', // Placeholder
               lastModified: new Date(file.created_at).toLocaleDateString('id-ID', {
                   day: '2-digit', month: 'short', year: 'numeric'
               }),

@@ -1,4 +1,3 @@
-// backend/src/upload/upload.service.ts
 import { Injectable, Logger, InternalServerErrorException } from '@nestjs/common';
 import { MegaService } from '../mega/mega.service';
 import { FilesService } from '../files/files.service';
@@ -42,9 +41,11 @@ export class UploadService {
       const createdFileInDb = await this.filesService.create({
         fileName: file.originalname,
         path: megaFile.nodeId,
-        size: file.size,
+        size: megaFile.size ?? 0, // Pastikan menggunakan size dari megaFile jika ada, atau dari file Multer
         storageProvider: 'mega',
         isPublic: false,
+        type: file.mimetype, // Tambahkan mimetype file
+        url: `https://mega.nz/file/${megaFile.nodeId}`, // Tambahkan URL file
       }, userId);
       this.logger.log(`Metadata saved to DB successfully. DB ID: ${createdFileInDb.id}`);
 
@@ -53,6 +54,7 @@ export class UploadService {
         id: createdFileInDb.id,
         fileName: createdFileInDb.fileName,
         size: createdFileInDb.size,
+        url: createdFileInDb.url, // Pastikan URL juga dikembalikan
       };
 
     } catch (error) {

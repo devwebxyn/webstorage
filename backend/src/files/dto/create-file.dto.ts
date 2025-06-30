@@ -1,4 +1,3 @@
-// backend/src/files/dto/create-file.dto.ts
 import { IsString, IsNotEmpty, IsNumber, IsBoolean, IsOptional } from 'class-validator';
 
 export class CreateFileDto {
@@ -13,6 +12,14 @@ export class CreateFileDto {
   @IsNumber()
   @IsNotEmpty()
   size: number;
+
+  @IsString()
+  @IsNotEmpty()
+  type: string; // Tambahkan properti type
+
+  @IsString()
+  @IsNotEmpty()
+  url: string; // Tambahkan properti url
 
   @IsBoolean()
   @IsOptional()

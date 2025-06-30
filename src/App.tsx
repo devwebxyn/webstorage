@@ -1,7 +1,7 @@
 // src/App.tsx
 import { useEffect } from 'react'; // 1. Impor useEffect
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { SignedIn, SignIn, SignUp, useAuth } from '@clerk/clerk-react'; // 2. Impor useAuth
+import { SignedIn, SignIn, SignUp, useAuth } from '@clerk/clerk-react';
 import ScrollToTop from './components/utils/ScrollToTop';
 import { setAuthTokenFunction } from './services/apiClient'; // 3. Impor fungsi dari apiClient
 

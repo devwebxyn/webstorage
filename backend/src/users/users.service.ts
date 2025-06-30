@@ -1,7 +1,8 @@
 // backend/src/users/users.service.ts
 import { Injectable, Logger } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
-import { users, User, NewUser } from './entities/user.entity';
+import { users } from '../database/schema';
+import { User, NewUser } from './entities/user.entity';
 import { eq } from 'drizzle-orm';
 
 @Injectable()

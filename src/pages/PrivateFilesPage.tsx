@@ -1,5 +1,6 @@
 // src/pages/PrivateFilesPage.tsx
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '@clerk/clerk-react';
 import { DashboardLayout } from '../components/dashboard/DashboardLayout';
 import { FileTable } from '../components/dashboard/FileTable';
 import apiClient from '@/services/apiClient';
@@ -34,6 +35,8 @@ export default function PrivateFilesPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
 
+  const { getToken } = useAuth();
+
   useEffect(() => {
     const fetchFiles = async () => {
       setLoading(true);
@@ -46,7 +49,17 @@ export default function PrivateFilesPage() {
           params.provider = activeTab;
         }
 
-        const response = await apiClient.get<ApiFile[]>(url, { params });
+        const token = await getToken();
+        if (!token) {
+          throw new Error('Pengguna tidak terautentikasi');
+        }
+
+        const response = await apiClient.get<ApiFile[]>(url, { 
+          params,
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
 
         // Konversi dari API ke struktur yang diinginkan oleh FileTable
         const formatted = response.data.map((file: ApiFile) => ({
