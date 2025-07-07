@@ -1,5 +1,6 @@
 // src/App.tsx
-import { useEffect } from 'react'; // 1. Impor useEffect
+import { useEffect } from 'react';
+import { ToastProvider } from '@/components/ui/toast';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { SignedIn, SignIn, SignUp, useAuth } from '@clerk/clerk-react';
 import ScrollToTop from './components/utils/ScrollToTop';
@@ -10,6 +11,7 @@ import DashboardPage from './pages/DashboardPage';
 import ManageFilesPage from './pages/ManageFilesPage';
 import PrivateFilesPage from './pages/PrivateFilesPage';
 import SharedFilesPage from './pages/SharedFilesPage';
+import { ToastTest } from '@/components/ui/ToastTest';
 
 export default function App() {
   // 4. Dapatkan fungsi getToken dari hook useAuth
@@ -25,7 +27,8 @@ export default function App() {
   }, [getToken]);
 
   return (
-    <BrowserRouter>
+    <ToastProvider>
+      <BrowserRouter>
       <ScrollToTop />
       <Routes>
         {/* Rute Publik (Tidak ada yang diubah di sini) */}
@@ -54,7 +57,9 @@ export default function App() {
         {/* RUTE BARU UNTUK PRIVATE DAN SHARED (Tidak ada yang diubah di sini) */}
         <Route path="/dashboard/private-files" element={<SignedIn><PrivateFilesPage /></SignedIn>} />
         <Route path="/dashboard/shared-files" element={<SignedIn><SharedFilesPage /></SignedIn>} />
-      </Routes>
-    </BrowserRouter>
+        <Route path="/test-toast" element={<ToastTest />} />
+        </Routes>
+      </BrowserRouter>
+    </ToastProvider>
   );
 }

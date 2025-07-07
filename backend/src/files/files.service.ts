@@ -19,6 +19,7 @@ export class FilesService {
     const newFileData: NewFile = {
       ...createFileDto,
       userId: userId,
+      storageProvider: 'mega' as const, // Ensure storageProvider is always 'mega'
     };
 
     this.logger.log(`Attempting to insert file record for user ${userId}: ${JSON.stringify(newFileData)}`);

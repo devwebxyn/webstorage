@@ -12,8 +12,11 @@ export const setAuthTokenFunction = (tokenFetcher: () => Promise<string | null>)
 
 // Buat instance Axios dasar
 const apiClient = axios.create({
-  // PERBAIKAN: Tambahkan /api di akhir baseURL
-  baseURL: 'http://localhost:3000/api', 
+  baseURL: 'http://localhost:3000/api',
+  timeout: 10000, // 10 second timeout
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
 // Interceptor untuk menyisipkan token autentikasi secara otomatis

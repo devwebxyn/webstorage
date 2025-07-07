@@ -10,7 +10,7 @@ export const SelectFileSchema = z.object({
   type: z.string(), // Tambahkan type
   url: z.string(), // Tambahkan url
   isPublic: z.boolean(),
-  storageProvider: z.string(),
+  storageProvider: z.literal('mega'),
   createdAt: z.date(),
 });
 
@@ -23,7 +23,7 @@ export const InsertFileSchema = z.object({
   type: z.string(), // Tambahkan type
   url: z.string(), // Tambahkan url
   isPublic: z.boolean().optional(),
-  storageProvider: z.string().optional(),
+  storageProvider: z.literal('mega').optional().default('mega'),
   createdAt: z.date().optional(),
 });
 

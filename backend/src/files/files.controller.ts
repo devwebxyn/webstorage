@@ -20,8 +20,11 @@ import { UpdateFileDto } from './dto/update-file.dto';
 
 // Definisikan tipe Request yang sudah diautentikasi
 interface AuthenticatedRequest extends Request {
-  auth: {
+  user: {
     userId: string;
+    email?: string;
+    name?: string;
+    [key: string]: any;
   };
 }
 
@@ -37,10 +40,10 @@ export class FilesController {
     @Req() req: AuthenticatedRequest,
     @Query('isPublic') isPublic?: string,
   ) {
-    if (!req.auth) {
+    if (!req.user) {
       throw new UnauthorizedException('Authentication data not found.');
     }
-    const userId = req.auth.userId;
+    const userId = req.user.userId;
     if (!userId) {
       throw new UnauthorizedException('User ID not found.');
     }
@@ -59,10 +62,10 @@ export class FilesController {
 
   @Post()
   async create(@Body() createFileDto: CreateFileDto, @Req() req: AuthenticatedRequest) {
-    if (!req.auth) {
+    if (!req.user) {
       throw new UnauthorizedException('Authentication data not found.');
     }
-    const userId = req.auth.userId;
+    const userId = req.user.userId;
     if (!userId) {
       throw new UnauthorizedException('User ID not found.');
     }

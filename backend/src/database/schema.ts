@@ -30,7 +30,7 @@ export const files = pgTable('files', {
   type: varchar('type', { length: 100 }).notNull(),
   url: text('url').notNull(),
   isPublic: boolean('is_public').default(false).notNull(),
-  storageProvider: varchar('storage_provider', { length: 50 }).default('mega').notNull(),
+  storageProvider: varchar('storage_provider', { length: 4, enum: ['mega'] }).default('mega').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
@@ -42,3 +42,4 @@ export const InsertFileSchema = z.object({
   id: z.string().optional(), // dari z.number().optional() menjadi z.string().optional()
   // ...existing code...
 });
+ 

@@ -18,10 +18,7 @@ export class UploadService {
     try {
       // Langkah 1: Mendapatkan koneksi storage MEGA
       this.logger.log('Getting MEGA storage instance...');
-      const storage = this.megaService.getMegaStorage();
-      if (!storage) {
-        throw new Error('MEGA storage instance is not available.');
-      }
+      const storage = await this.megaService.getMegaStorage();
       this.logger.log('MEGA storage instance obtained successfully.');
 
       // Langkah 2: Mengunggah file ke MEGA

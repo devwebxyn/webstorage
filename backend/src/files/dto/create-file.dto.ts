@@ -26,6 +26,6 @@ export class CreateFileDto {
   isPublic?: boolean;
 
   @IsString()
-  @IsNotEmpty()
-  storageProvider: string;
+  @IsOptional()
+  storageProvider?: 'mega';
 }
