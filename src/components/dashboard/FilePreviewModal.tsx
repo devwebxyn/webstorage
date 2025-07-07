@@ -4,13 +4,7 @@ import { X, Download, Link as LinkIcon, EyeOff, Loader2 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { useToast } from '../ui/toast';
 
-type FileType = {
-  name: string;
-  url: string;
-  type: string;
-  size?: string | number;
-  previewUrl?: string;
-};
+import { FileType } from '@/types/file';
 
 // Helper function to format file size
 const formatFileSize = (bytes: number) => {
@@ -57,7 +51,7 @@ const getFileType = (file: { url: string; name: string; type?: string }) => {
 type FilePreviewModalProps = {
   file: FileType | null;
   onClose: () => void;
-  onDownload?: (file: FileType) => void;
+  onDownload?: (file: FileType) => Promise<void> | void;
 };
 
 const FilePreviewModal = ({

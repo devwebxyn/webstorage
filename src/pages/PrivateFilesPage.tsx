@@ -6,31 +6,22 @@ import FilePreviewModal from '@/components/dashboard/FilePreviewModal';
 import { Button } from '@/components/ui/button';
 import { Loader2, RefreshCw } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-import apiClient from '@/services/apiClient';
-import { AxiosError } from 'axios';
+import { supabase } from '@/services/apiClient';
 import { useNavigate } from 'react-router-dom';
 
-// Tipe data untuk file
-type FileType = {
-  id: string;
-  name: string;
-  size: string;
-  type: string;
-  url: string;
-  previewUrl?: string;
-  lastModified: string;
-};
+import { FileType } from '@/types/file';
 
 export default function PrivateFilesPage() {
   const [files, setFiles] = useState<FileType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [previewFile, setPreviewFile] = useState<FileType | null>(null);
-  const { getToken } = useAuth();
+  const { getToken, isSignedIn } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
   const formatFileSize = (bytes: number): string => {
+    if (!bytes) return '0 B';
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -41,59 +32,47 @@ export default function PrivateFilesPage() {
     setError(null);
     
     try {
-      const token = await getToken();
-      if (!token) {
+      if (!isSignedIn) {
         throw new Error('Anda harus login untuk melihat file pribadi');
       }
 
-      const response = await apiClient.get<Array<{
-        id: string;
-        fileName: string;
-        size: number;
-        type: string;
-        url: string;
-        previewUrl?: string;
-        createdAt: string;
-      }>>('/files', {
-        params: { isPublic: 'false' },
-        headers: { 
-          Authorization: `Bearer ${token}`,
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
-      });
+      const { data: files, error: fetchError } = await supabase
+        .storage
+        .from('files')
+        .list('', {
+          sortBy: { column: 'created_at', order: 'desc' },
+        });
 
-      const formattedFiles = response.data.map(file => ({
+      if (fetchError) throw fetchError;
+
+      const formattedFiles = files.map(file => ({
         id: file.id,
-        name: file.fileName,
-        size: formatFileSize(file.size),
-        type: file.type || 'application/octet-stream',
-        url: file.url,
-        previewUrl: file.previewUrl,
-        lastModified: new Date(file.createdAt).toLocaleString('id-ID', {
+        name: file.name,
+        size: formatFileSize(file.metadata?.size || 0),
+        type: file.metadata?.mimetype || 'application/octet-stream',
+        url: `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/files/${file.name}`,
+        lastModified: new Date(file.created_at).toLocaleString('id-ID', {
           day: '2-digit',
           month: 'short',
           year: 'numeric',
           hour: '2-digit',
           minute: '2-digit'
         })
-      }));
+      })) as FileType[];
 
       setFiles(formattedFiles);
     } catch (error) {
       console.error('Gagal mengambil file:', error);
       let errorMessage = 'Terjadi kesalahan saat memuat file';
       
-      if (error instanceof AxiosError) {
-        if (error.response?.status === 401) {
+      if (error instanceof Error) {
+        if (error.message.includes('JWT')) {
           errorMessage = 'Sesi Anda telah berakhir. Silakan login kembali.';
-        } else if (error.response?.status === 403) {
+        } else if (error.message.includes('permission')) {
           errorMessage = 'Anda tidak memiliki izin untuk mengakses file ini';
-        } else if (error.code === 'ERR_NETWORK') {
-          errorMessage = 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.';
+        } else {
+          errorMessage = error.message;
         }
-      } else if (error instanceof Error) {
-        errorMessage = error.message;
       }
       
       setError(errorMessage);
@@ -107,41 +86,32 @@ export default function PrivateFilesPage() {
     }
   };
 
-  const handleDownload = async (file: FileType) => {
-    try {
-      const token = await getToken();
-      if (!token) throw new Error('Tidak terautentikasi');
-
-      const response = await fetch(file.url, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) throw new Error('Gagal mengunduh file');
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = file.name;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-
-      toast({
-        title: "Unduhan dimulai",
-        description: `Mengunduh ${file.name}`,
-      });
-    } catch (error) {
-      console.error('Gagal mengunduh file:', error);
-      toast({
-        variant: "destructive",
-        title: "Gagal mengunduh",
-        description: error instanceof Error ? error.message : 'Terjadi kesalahan saat mengunduh file',
-      });
-    }
+  const handleDownload = async (file: FileType): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      try {
+        const link = document.createElement('a');
+        link.href = file.url;
+        link.download = file.name;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        toast({
+          title: "Unduhan dimulai",
+          description: `Mengunduh ${file.name}`,
+        });
+        resolve();
+      } catch (error) {
+        console.error('Gagal mengunduh file:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Terjadi kesalahan saat mengunduh file';
+        toast({
+          variant: "destructive",
+          title: "Gagal mengunduh",
+          description: errorMessage,
+        });
+        reject(error);
+      }
+    });
   };
 
   const handleUpload = () => {

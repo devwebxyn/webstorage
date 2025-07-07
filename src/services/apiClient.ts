@@ -1,39 +1,88 @@
 // src/services/apiClient.ts
-import axios from 'axios';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-// Kita buat sebuah variabel untuk "menampung" fungsi getToken dari Clerk
-let getAuthToken: (() => Promise<string | null>) | null = null;
+// Inisialisasi Supabase client
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Ini adalah fungsi yang akan kita panggil dari komponen React
-// untuk memberikan fungsi getToken ke apiClient
-export const setAuthTokenFunction = (tokenFetcher: () => Promise<string | null>) => {
-  getAuthToken = tokenFetcher;
-};
-
-// Buat instance Axios dasar
-const apiClient = axios.create({
-  baseURL: 'http://localhost:3000/api',
-  timeout: 10000, // 10 second timeout
-  headers: {
-    'Content-Type': 'application/json',
-  },
+// Buat instance Supabase client
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true
+  }
 });
 
-// Interceptor untuk menyisipkan token autentikasi secara otomatis
-apiClient.interceptors.request.use(
-  async (config) => {
-    // Periksa apakah fungsi getAuthToken sudah diberikan
-    if (getAuthToken) {
-      const token = await getAuthToken();
+// Buat variabel untuk menyimpan fungsi getToken dari Clerk
+let getAuthToken: (() => Promise<string | null>) | null = null;
+
+// Fungsi untuk menyetel fungsi getToken dari Clerk
+export const setAuthTokenFunction = (tokenFetcher: () => Promise<string | null>) => {
+  getAuthToken = tokenFetcher;
+  
+  // Set up interceptor untuk menambahkan token ke header request
+  supabase.auth.onAuthStateChange(async (event) => {
+    if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+      const token = await getAuthToken?.();
       if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+        // Set the session with the token
+        const { data, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error('Error getting session:', error);
+          return;
+        }
+        
+        // Update the session with the new token
+        const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+          access_token: token,
+          refresh_token: data.session?.refresh_token || ''
+        });
+        
+        if (sessionError) {
+          console.error('Error updating session:', sessionError);
+        }
       }
     }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
+  });
+};
+
+// Buat fungsi untuk fetch data dari Supabase Storage
+const fetchFilesFromSupabase = async (isPublic: boolean = false) => {
+  try {
+    const { data: files, error } = await supabase
+      .storage
+      .from('files')
+      .list('', {
+        sortBy: { column: 'created_at', order: 'desc' },
+      });
+
+    if (error) throw error;
+    
+    return files.map(file => ({
+      id: file.id,
+      name: file.name,
+      size: file.metadata?.size || 0,
+      type: file.metadata?.mimetype || 'application/octet-stream',
+      url: `${supabaseUrl}/storage/v1/object/public/files/${file.name}`,
+      lastModified: file.created_at,
+    }));
+  } catch (error) {
+    console.error('Error fetching files from Supabase:', error);
+    throw error;
   }
-);
+};
+
+// Ekspor fungsi-fungsi API
+export const apiClient = {
+  get: async (url: string, config?: any) => {
+    if (url === '/files') {
+      const isPublic = config?.params?.isPublic === 'true';
+      return { data: await fetchFilesFromSupabase(isPublic) };
+    }
+    throw new Error(`Unhandled API endpoint: ${url}`);
+  },
+  // Tambahkan method lain (post, put, delete) sesuai kebutuhan
+};
 
 export default apiClient;
