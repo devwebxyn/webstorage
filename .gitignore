@@ -23,4 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 .env.local
+<<<<<<< HEAD
 drizzle.config.ts
+=======
+.env
+>>>>>>> f967dea3dc78741dce5cef6f2ae84025a03aad52
